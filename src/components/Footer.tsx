@@ -15,10 +15,10 @@ export default function Footer() {
         <div>
           <h5 className="font-label-md font-bold mb-4">Platform</h5>
           <ul className="font-label-md space-y-2 opacity-70">
-            <li><Link to="/" className="hover:text-secondary-fixed transition-colors">How it Works</Link></li>
-            <li><Link to="/" className="hover:text-secondary-fixed transition-colors">For Dentists</Link></li>
-            <li><Link to="/" className="hover:text-secondary-fixed transition-colors">For Clinics</Link></li>
-            <li><Link to="/" className="hover:text-secondary-fixed transition-colors">Success Stories</Link></li>
+            <li><Link to="/#how-it-works" className="hover:text-secondary-fixed transition-colors">How it Works</Link></li>
+            <li><Link to="/#for-dentists" className="hover:text-secondary-fixed transition-colors">For Dentists</Link></li>
+            <li><Link to="/#for-clinics" className="hover:text-secondary-fixed transition-colors">For Clinics</Link></li>
+            <li><Link to="/#success-stories" className="hover:text-secondary-fixed transition-colors">Success Stories</Link></li>
           </ul>
         </div>
         <div>

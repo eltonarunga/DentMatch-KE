@@ -22,7 +22,7 @@ export default function Landing() {
             </span>
           </button>
           <div className="hidden md:flex gap-6 items-center">
-            <a href="#how-it-works" className="font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors px-2 py-1 rounded">How it Works</a>
+            <Link to="/#how-it-works" className="font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors px-2 py-1 rounded">How it Works</Link>
             <Link to="/login?role=dentist" className="font-label-md text-label-md text-primary font-bold hover:underline">Dentist Login</Link>
             <Link to="/login?role=clinic" className="bg-primary text-on-primary font-label-md px-4 py-2 rounded-lg hover:shadow-md transition-shadow">Clinic Login</Link>
           </div>
@@ -31,7 +31,7 @@ export default function Landing() {
       
       {isMobileMenuOpen && (
         <div className="md:hidden fixed top-[60px] left-0 w-full bg-surface border-b border-outline-variant shadow-lg z-40 px-margin-mobile py-4 flex flex-col gap-4">
-          <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="font-label-md text-label-lg text-on-surface hover:text-primary py-2 border-b border-outline-variant/30">How it Works</a>
+          <Link to="/#how-it-works" onClick={() => setIsMobileMenuOpen(false)} className="font-label-md text-label-lg text-on-surface hover:text-primary py-2 border-b border-outline-variant/30">How it Works</Link>
           <Link to="/login?role=dentist" onClick={() => setIsMobileMenuOpen(false)} className="font-label-md text-label-lg text-on-surface hover:text-primary py-2 border-b border-outline-variant/30">Dentist Login</Link>
           <Link to="/login?role=clinic" onClick={() => setIsMobileMenuOpen(false)} className="font-label-md text-label-lg text-on-surface hover:text-primary py-2">Clinic Login</Link>
         </div>
@@ -67,13 +67,12 @@ export default function Landing() {
             <p className="font-label-md text-label-md text-outline uppercase tracking-widest">Trusted by Professionals</p>
             <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale">
               <span className="font-headline-md font-bold text-primary">KMPDC Verified</span>
-              <span className="font-headline-md font-bold text-primary">KDA Member</span>
-              <span className="font-headline-md font-bold text-primary">Dental Council</span>
+              <span className="font-headline-md font-bold text-primary">KDA</span>
             </div>
           </div>
         </section>
 
-        <section className="px-margin-mobile py-20 bg-surface">
+        <section id="how-it-works" className="px-margin-mobile py-20 bg-surface">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             <div className="bg-surface-container-lowest p-8 rounded-2xl shadow-sm border border-outline-variant">
               <div className="w-12 h-12 bg-primary-container rounded-xl flex items-center justify-center mb-6">
@@ -102,7 +101,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="px-margin-mobile py-20 max-w-6xl mx-auto">
+        <section id="for-dentists" className="px-margin-mobile py-20 max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div className="space-y-8">
               <div className="flex items-center gap-4">
@@ -134,7 +133,7 @@ export default function Landing() {
               </div>
             </div>
             
-            <div className="space-y-8">
+            <div id="for-clinics" className="space-y-8">
               <div className="flex items-center gap-4">
                 <div className="w-1 px-4 h-12 bg-secondary rounded-full"></div>
                 <h2 className="font-headline-lg text-secondary leading-tight">For Dental Clinics</h2>
@@ -166,7 +165,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="bg-surface-container-low px-margin-mobile py-20">
+        <section id="success-stories" className="bg-surface-container-low px-margin-mobile py-20">
           <div className="max-w-4xl mx-auto text-center mb-12">
             <h2 className="font-headline-lg text-primary mb-4">Sample Practitioner Profile</h2>
             <p className="font-body-lg text-on-surface-variant">This is how clinics see your profile—clean, professional, and credential-focused.</p>

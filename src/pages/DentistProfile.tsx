@@ -214,7 +214,7 @@ export default function DentistProfile() {
         </div>
         
         <div className="mt-8 flex justify-center">
-            <button onClick={() => navigate('/login')} className="text-error font-label-md px-4 py-2 hover:bg-error/10 rounded-lg transition-colors flex items-center gap-2">
+            <button onClick={() => navigate('/')} className="text-error font-label-md px-4 py-2 hover:bg-error/10 rounded-lg transition-colors flex items-center gap-2">
                 <span className="material-symbols-outlined">logout</span>
                 Log Out
             </button>
