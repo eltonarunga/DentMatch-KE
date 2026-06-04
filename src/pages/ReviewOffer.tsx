@@ -1,17 +1,39 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { DataStore, Offer } from '../lib/dataStore';
 
 export default function ReviewOffer() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
 
+  const offerId = searchParams.get('offerId') || 'offer-1';
+  const offer = DataStore.getOffer(offerId) || DataStore.getOffers()[0];
+
+  if (!offer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-surface">
+        <div className="text-center space-y-4">
+          <span className="material-symbols-outlined text-5xl text-outline">error</span>
+          <h2 className="text-headline-md font-bold">Offer Not Found</h2>
+          <button onClick={() => navigate('/dashboard')} className="bg-primary text-on-primary px-4 py-2 rounded-lg">
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleAccept = () => {
     setIsAccepting(true);
-    // Simulate accepting logic then navigate to WhatsApp
+    // Persist Accepted state instantly
+    DataStore.updateOffer(offer.id, { status: 'Accepted' });
+
     setTimeout(() => {
-      // Directs to a WhatsApp chat based on Kenyan phone formats
-      window.open('https://wa.me/254700000000?text=' + encodeURIComponent('Hello Starlight Dental, I am accepting your locum offer on DentMatch KE. Let\'s coordinate!'), '_blank');
+      // Directs to a WhatsApp chat with localized message
+      const text = `Hello Smilecare Dental, I have accepted your locum offer on DentMatch KE. Let's align on the dates and chairs schedule coordinates!`;
+      window.open(`https://wa.me/254700000000?text=${encodeURIComponent(text)}`, '_blank');
       setIsAccepting(false);
       navigate('/dashboard');
     }, 1200);
@@ -19,6 +41,9 @@ export default function ReviewOffer() {
 
   const handleDecline = () => {
     setIsDeclining(true);
+    // Persist Declined state instantly
+    DataStore.updateOffer(offer.id, { status: 'Declined' });
+
     setTimeout(() => {
       setIsDeclining(false);
       navigate('/dashboard');
@@ -32,7 +57,7 @@ export default function ReviewOffer() {
           <button onClick={() => navigate('/dashboard')} className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface">Offer Details</h1>
+          <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface">Clinical Offer Details</h1>
         </div>
       </header>
 
@@ -40,22 +65,22 @@ export default function ReviewOffer() {
         {/* Clinic Header */}
         <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 mb-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl bg-primary-container text-primary flex items-center justify-center shrink-0">
+            <div className="w-16 h-16 rounded-xl bg-primary-container text-primary flex items-center justify-center shrink-0 border border-outline-variant">
               <span className="material-symbols-outlined text-[32px]">apartment</span>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <h2 className="font-headline-md text-headline-md font-bold text-on-surface">Starlight Dental</h2>
+                <h2 className="font-headline-md text-headline-md font-bold text-on-surface text-xl md:text-2xl">{offer.clinicName}</h2>
                 <span className="material-symbols-outlined text-secondary text-[20px]" title="Verified Clinic" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
               </div>
-              <p className="font-body-md text-on-surface-variant flex items-center gap-1">
+              <p className="font-body-md text-on-surface-variant flex items-center gap-1 text-sm font-medium">
                 <span className="material-symbols-outlined text-[16px]">location_on</span>
-                Kilimani, Nairobi
+                {offer.clinicLocation}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-tertiary-container/30 text-tertiary px-4 py-2 rounded-lg font-label-md">
-            <span className="material-symbols-outlined text-[20px]">schedule</span>
+          <div className="flex items-center gap-2 bg-tertiary-container text-on-tertiary-container px-4 py-2 rounded-lg font-bold text-body-sm shadow-sm">
+            <span className="material-symbols-outlined text-[18px]">schedule</span>
             <span>Expires in 24 hours</span>
           </div>
         </div>
@@ -63,50 +88,54 @@ export default function ReviewOffer() {
         {/* Offer Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm">
-            <h3 className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mb-4">Position Details</h3>
+            <h3 className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mb-4 font-bold text-sm">Contract Terms</h3>
             
             <div className="space-y-4">
               <div>
-                <p className="font-label-sm text-on-surface-variant mb-1">Role Type</p>
+                <p className="font-label-sm text-on-surface-variant mb-1 text-[11px] uppercase tracking-wider font-semibold">Role Type</p>
                 <div className="flex items-center gap-2">
-                  <span className="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container rounded-md text-label-md font-bold">Locum</span>
+                  <span className="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container rounded-md text-label-md font-bold text-sm">
+                    {offer.role}
+                  </span>
                 </div>
               </div>
               
               <div>
-                <p className="font-label-sm text-on-surface-variant mb-1">Dates & Time</p>
-                <p className="font-body-md text-on-surface font-semibold">15th Oct - 17th Oct, 2026</p>
-                <p className="font-body-sm text-on-surface-variant">08:00 AM - 05:00 PM</p>
+                <p className="font-label-sm text-on-surface-variant mb-1 text-[11px] uppercase tracking-wider font-semibold">Planned Schedule</p>
+                <p className="font-body-md text-on-surface font-bold text-lg">{offer.dates}</p>
+                <p className="font-body-sm text-on-surface-variant">Selected days: {offer.selectedDays?.join(', ') || 'Mon - Fri'}</p>
               </div>
 
               <div>
-                <p className="font-label-sm text-on-surface-variant mb-1">Proposed Compensation</p>
-                <p className="font-headline-sm text-primary font-bold">KES 15,000 <span className="text-body-md font-normal text-on-surface-variant">/ day</span></p>
-                <p className="font-body-sm text-on-surface-variant mt-1">Total: KES 45,000</p>
+                <p className="font-label-sm text-on-surface-variant mb-1 text-[11px] uppercase tracking-wider font-semibold">Compensation</p>
+                <p className="font-headline-sm text-primary font-bold text-xl md:text-2xl">{offer.rate}</p>
+                <p className="font-body-sm text-on-surface-variant mt-1">Status: <strong className="uppercase">{offer.status}</strong></p>
               </div>
             </div>
           </div>
 
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm">
-            <h3 className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mb-4">Clinic Setup</h3>
+            <h3 className="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mb-4 font-bold text-sm">Clinical Setup</h3>
             
             <div className="space-y-5">
               <div>
-                <p className="font-label-sm text-on-surface-variant mb-2">Available Equipment</p>
+                <p className="font-label-sm text-on-surface-variant mb-2 text-[11px] uppercase tracking-wider font-semibold">Required Equipment Proficiency</p>
                 <div className="flex flex-wrap gap-2">
-                  <span className="bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg text-label-md border border-outline-variant/50">Digital X-Ray</span>
-                  <span className="bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg text-label-md border border-outline-variant/50">Rotary Endo</span>
-                  <span className="bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-lg text-label-md border border-outline-variant/50">Autoclave B-Class</span>
+                  {offer.equipment?.map((eq, i) => (
+                    <span key={i} className="bg-surface-container text-on-surface px-3 py-1.5 rounded-lg text-body-sm font-semibold border border-outline-variant">
+                      {eq}
+                    </span>
+                  ))}
                 </div>
               </div>
               
               <div>
-                <p className="font-label-sm text-on-surface-variant mb-2">Support Staff</p>
+                <p className="font-label-sm text-on-surface-variant mb-2 text-[11px] uppercase tracking-wider font-semibold">Chairside Support Staff</p>
                 <div className="flex items-center gap-3 bg-surface-container-low p-3 rounded-xl border border-outline-variant">
-                  <span className="material-symbols-outlined text-primary">group</span>
+                  <span className="material-symbols-outlined text-primary text-3xl">group</span>
                   <div>
-                    <p className="font-body-md font-semibold text-on-surface">1 Dental Assistant</p>
-                    <p className="font-body-sm text-on-surface-variant">Available for chairside assistance</p>
+                    <span className="font-body-md font-bold text-on-surface text-sm block">1 Dental Assistant</span>
+                    <span className="font-body-sm text-on-surface-variant text-xs">Assigned for fully synchronized clinical assistance</span>
                   </div>
                 </div>
               </div>
@@ -117,31 +146,35 @@ export default function ReviewOffer() {
         {/* Message from clinic */}
         <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 mb-8 relative">
           <span className="material-symbols-outlined absolute top-4 right-6 text-primary/20 text-[48px]">format_quote</span>
-          <h3 className="font-label-md text-label-md uppercase tracking-wider text-primary mb-3">Additional Notes</h3>
-          <p className="font-body-md text-on-surface italic relative z-10">
-            "Looking forward to having you join us for the busy weekend schedule. We have a lot of pediatric patients booked on Saturday. Please ensure you are comfortable with pediatric extractions and restorative work."
+          <h3 className="font-label-md text-label-md uppercase tracking-wider text-primary mb-3 font-semibold text-xs tracking-widest">Additional Clinic Notes</h3>
+          <p className="font-body-md text-on-surface italic relative z-10 text-sm">
+            "{offer.additionalNotes}"
           </p>
         </div>
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 items-center border-t border-outline-variant pt-8">
           <button 
+            type="button"
             onClick={handleDecline} 
-            disabled={isDeclining || isAccepting}
-            className="w-full sm:w-auto px-8 py-4 font-label-md font-bold text-on-surface-variant border-2 border-outline-variant hover:border-error hover:text-error rounded-xl transition-colors flex items-center justify-center"
+            disabled={isDeclining || isAccepting || offer.status === 'Accepted' || offer.status === 'Declined'}
+            className="w-full sm:w-auto px-8 py-4 font-bold text-on-surface-variant border-2 border-outline-variant hover:border-error hover:text-error rounded-xl transition-colors flex items-center justify-center disabled:opacity-50"
           >
             {isDeclining ? (
               <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
-            ) : "Decline Offer"}
+            ) : offer.status === 'Declined' ? "Declined" : "Decline Offer"}
           </button>
           
           <button 
+            type="button"
             onClick={handleAccept} 
-            disabled={isAccepting || isDeclining}
-            className="w-full sm:flex-1 px-8 py-4 bg-primary text-on-primary font-label-md font-bold rounded-xl active:scale-[0.98] hover:shadow-md transition-all flex items-center justify-center gap-2"
+            disabled={isAccepting || isDeclining || offer.status === 'Accepted' || offer.status === 'Declined'}
+            className="w-full sm:flex-1 px-8 py-4 bg-primary text-on-primary font-bold rounded-xl active:scale-[0.98] hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isAccepting ? (
               <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+            ) : offer.status === 'Accepted' ? (
+              "Accepted (Chat Connected)"
             ) : (
               <>
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

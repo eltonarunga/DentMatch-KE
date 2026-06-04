@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { DataStore, Dentist } from '../lib/dataStore';
 
 const SPECIALTIES = [
   "General Dentistry",
@@ -16,6 +17,8 @@ const SPECIALTIES = [
 const LOCATIONS = ["Nairobi", "Mombasa", "Kisumu", "Nakuru"];
 
 export default function TalentBrowser() {
+  const [dentists] = useState<Dentist[]>(() => DataStore.getDentists());
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [isSpecOpen, setIsSpecOpen] = useState(false);
@@ -25,6 +28,23 @@ export default function TalentBrowser() {
 
   const specRef = useRef<HTMLDivElement>(null);
   const locRef = useRef<HTMLDivElement>(null);
+
+  const filteredDentists = dentists.filter(dentist => {
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch = query === "" || 
+      dentist.name.toLowerCase().includes(query) ||
+      dentist.specialty.toLowerCase().includes(query) ||
+      dentist.location.toLowerCase().includes(query) ||
+      dentist.id.toLowerCase().includes(query);
+
+    const matchesSpecialty = selectedSpecialties.length === 0 || 
+      selectedSpecialties.some(spec => dentist.specialty.toLowerCase().includes(spec.toLowerCase()));
+
+    const matchesLocation = selectedLocations.length === 0 || 
+      selectedLocations.some(loc => dentist.location.toLowerCase().includes(loc.toLowerCase()));
+
+    return matchesSearch && matchesSpecialty && matchesLocation;
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -90,7 +110,13 @@ export default function TalentBrowser() {
             <div className="flex flex-col md:flex-row gap-4 items-center">
               <div className="w-full md:flex-1 relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-                <input className="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary text-body-md" placeholder="Search by ID or Specialty..." type="text"/>
+                <input 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary text-body-md" 
+                  placeholder="Search by ID, name or specialty..." 
+                  type="text"
+                />
               </div>
               <div className="w-full md:w-auto flex flex-wrap md:flex-nowrap gap-2 z-10">
                 {/* Specialty Dropdown */}
@@ -182,129 +208,69 @@ export default function TalentBrowser() {
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-2">
-              <span className="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Locum</span>
+          {filteredDentists.length === 0 ? (
+            <div className="col-span-full py-16 text-center text-on-surface-variant text-body-lg">
+              <span className="material-symbols-outlined text-5xl opacity-40 mb-2">person_search</span>
+              <p>No matching dentists found. Try adjusting your filters.</p>
             </div>
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-16 h-16 rounded-lg bg-surface-container-high flex items-center justify-center border border-outline-variant">
-                <span className="material-symbols-outlined text-outline text-3xl">account_circle</span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface">Dentist #842</h3>
-                  <span className="material-symbols-outlined text-secondary text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+          ) : (
+            filteredDentists.map(dentist => (
+              <div key={dentist.id} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col hover:shadow-md transition-all relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-2">
+                  <span className="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+                    {dentist.id === "dentist-842" ? "Locum" : "Permanent"}
+                  </span>
                 </div>
-                <p className="font-label-md text-label-md text-secondary font-bold uppercase tracking-wide">Orthodontics Specialist</p>
-                <div className="flex items-center gap-1 mt-1 text-on-surface-variant font-label-md">
-                  <span className="material-symbols-outlined text-sm">location_on</span> Nairobi, KE
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-lg bg-surface-container-high flex items-center justify-center border border-outline-variant">
+                    <span className="material-symbols-outlined text-outline text-3xl">account_circle</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">{dentist.name}</h3>
+                      <span className="material-symbols-outlined text-secondary text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                    </div>
+                    <p className="font-label-md text-label-md text-secondary font-bold uppercase tracking-wide">{dentist.specialty}</p>
+                    <div className="flex items-center gap-1 mt-1 text-on-surface-variant font-label-md">
+                      <span className="material-symbols-outlined text-sm">location_on</span> {dentist.location}, KE
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mb-4 p-2 bg-surface-container-low rounded-lg">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-on-surface-variant uppercase font-bold">Experience</span>
-                <span className="font-body-md text-on-surface">8 Years</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-on-surface-variant uppercase font-bold">Expected Salary</span>
-                <span className="font-body-md text-on-surface">KSh 180k+</span>
-              </div>
-            </div>
-            <div className="mb-4">
-              <p className="text-[10px] text-on-surface-variant uppercase font-bold mb-2">Proficient Equipment</p>
-              <div className="flex flex-wrap gap-1">
-                <span className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant">CBCT Scanner</span>
-                <span className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant">Itero Element</span>
-                <span className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant">Laser Biolase</span>
-              </div>
-            </div>
-            <div className="mt-auto flex flex-col gap-2">
-              <Link to="/send-offer" className="w-full bg-primary text-on-primary py-3 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                <span className="material-symbols-outlined text-sm">mail</span> Send Offer
-              </Link>
-              <button 
-                onClick={() => setSelectedCv({
-                  name: "Dentist #842",
-                  specialty: "Orthodontics Specialist",
-                  location: "Nairobi, KE",
-                  experience: "8 Years",
-                  license: "A4930",
-                  education: { degree: "Master of Dental Surgery (MDS) in Orthodontics", school: "University of Nairobi", year: "2018" },
-                  history: [
-                    { role: "Senior Orthodontist", clinic: "Nairobi Dental Hospital", duration: "2020 - Present" },
-                    { role: "Resident Dentist", clinic: "Kenyatta National Hospital", duration: "2018 - 2020" }
-                  ],
-                  equipment: ["CBCT Scanner", "Itero Element", "Laser Biolase"]
-                })}
-                className="w-full border border-primary text-primary py-3 rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-colors active:scale-95"
-              >
-                View Full CV
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-2">
-              <span className="bg-primary-container text-on-primary-container text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Permanent</span>
-            </div>
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-16 h-16 rounded-lg bg-surface-container-high flex items-center justify-center border border-outline-variant">
-                <span className="material-symbols-outlined text-outline text-3xl">account_circle</span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-headline-sm text-headline-sm text-on-surface">Dentist #402</h3>
-                  <span className="material-symbols-outlined text-secondary text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                <div className="grid grid-cols-2 gap-2 mb-4 p-2 bg-surface-container-low rounded-lg">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-on-surface-variant uppercase font-bold">Experience</span>
+                    <span className="font-body-md text-on-surface font-semibold">{dentist.experience}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-on-surface-variant uppercase font-bold">Expected Salary</span>
+                    <span className="font-body-md text-on-surface font-semibold">{dentist.expectedSalary}</span>
+                  </div>
                 </div>
-                <p className="font-label-md text-label-md text-secondary font-bold uppercase tracking-wide">General Practitioner</p>
-                <div className="flex items-center gap-1 mt-1 text-on-surface-variant font-label-md">
-                  <span className="material-symbols-outlined text-sm">location_on</span> Mombasa, KE
+                <div className="mb-4">
+                  <p className="text-[10px] text-on-surface-variant uppercase font-bold mb-2">Proficient Equipment</p>
+                  <div className="flex flex-wrap gap-1">
+                    {dentist.equipment.map(eq => (
+                      <span key={eq} className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant">{eq}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-auto flex flex-col gap-2">
+                  <Link 
+                    to={`/send-offer?dentistId=${dentist.id}`} 
+                    className="w-full bg-primary text-on-primary py-3 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 hover:bg-primary-container active:scale-95 transition-transform"
+                  >
+                    <span className="material-symbols-outlined text-sm">mail</span> Send Offer
+                  </Link>
+                  <button 
+                    onClick={() => setSelectedCv(dentist)}
+                    className="w-full border border-primary text-primary py-3 rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-colors active:scale-95"
+                  >
+                    View Full CV
+                  </button>
                 </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mb-4 p-2 bg-surface-container-low rounded-lg">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-on-surface-variant uppercase font-bold">Experience</span>
-                <span className="font-body-md text-on-surface">4 Years</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-on-surface-variant uppercase font-bold">Expected Salary</span>
-                <span className="font-body-md text-on-surface">KSh 120k+</span>
-              </div>
-            </div>
-            <div className="mb-4">
-              <p className="text-[10px] text-on-surface-variant uppercase font-bold mb-2">Proficient Equipment</p>
-              <div className="flex flex-wrap gap-1">
-                <span className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant">Digital X-Ray</span>
-                <span className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant">Autoclave Pro</span>
-                <span className="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[11px] font-medium border border-outline-variant">Apex Locator</span>
-              </div>
-            </div>
-            <div className="mt-auto flex flex-col gap-2">
-              <Link to="/send-offer" className="w-full bg-primary text-on-primary py-3 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                <span className="material-symbols-outlined text-sm">send</span> Send Offer
-              </Link>
-              <button 
-                onClick={() => setSelectedCv({
-                  name: "Dentist #402",
-                  specialty: "General Practitioner",
-                  location: "Mombasa, KE",
-                  experience: "4 Years",
-                  license: "B8304",
-                  education: { degree: "Bachelor of Dental Surgery (BDS)", school: "Moi University", year: "2022" },
-                  history: [
-                    { role: "Dental Officer", clinic: "Coast General Hospital", duration: "2023 - Present" },
-                    { role: "Intern Dentist", clinic: "Mombasa Dental Center", duration: "2022 - 2023" }
-                  ],
-                  equipment: ["Digital X-Ray", "Autoclave Pro", "Apex Locator"]
-                })}
-                className="w-full border border-primary text-primary py-3 rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-colors active:scale-95"
-              >
-                View Full CV
-              </button>
-            </div>
-          </div>
+            ))
+          )}
         </section>
 
         <section className="mt-8 grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">

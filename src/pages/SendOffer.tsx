@@ -1,13 +1,22 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { DataStore } from '../lib/dataStore';
 
 export default function SendOffer() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const dentistId = searchParams.get('dentistId') || 'dentist-842';
+  const dentist = DataStore.getDentist(dentistId) || DataStore.getDentists()[0];
 
-  const [positionType, setPositionType] = useState('permanent');
-  const [salary, setSalary] = useState('');
+  const [positionType, setPositionType] = useState('locum');
+  const [salary, setSalary] = useState(positionType === 'locum' ? '15000' : '200000');
   const [selectedDays, setSelectedDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
   const [equipment, setEquipment] = useState(['Digital X-Ray (RVG)', 'Class B Autoclave', 'Rotary Endo Motor']);
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [clinicLocation, setClinicLocation] = useState('Valley Arcade Shopping Centre, Lavington, Nairobi');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   
@@ -34,6 +43,45 @@ export default function SendOffer() {
     );
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!salary || Number(salary) <= 0) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    // Create new offer representation
+    const newOffer = {
+      dentistId: dentist.id,
+      dentistName: dentist.name,
+      clinicName: "Smilecare Dental Clinic",
+      clinicLocation: clinicLocation,
+      role: positionType === 'locum' ? 'Locum' : 'Permanent',
+      dates: positionType === 'locum' ? '15th Oct - 17th Oct, 2026' : 'Full Time',
+      rate: positionType === 'locum' 
+        ? `KES ${Number(salary).toLocaleString()} / day` 
+        : `KES ${Number(salary).toLocaleString()} / month`,
+      salaryValue: Number(salary),
+      positionType: positionType as 'locum' | 'permanent',
+      selectedDays,
+      equipment,
+      additionalNotes: additionalNotes || "Looking forward to having you join us support team. Let's touch base on details!"
+    };
+
+    setTimeout(() => {
+      DataStore.addOffer(newOffer);
+      setIsSubmitting(false);
+      setShowSuccess(true);
+    }, 900);
+  };
+
+  // Safe WhatsApp Link Generator
+  const getWhatsAppLink = () => {
+    const text = `Hello ${dentist.name}, I am matching you for the clinical role at Smilecare Dental Clinic: ${positionType === 'locum' ? 'Locum' : 'Permanent'} position starting mid-October with daily rate KES ${Number(salary).toLocaleString()}. Let's coordinate details on DentMatch KE!`;
+    return `https://wa.me/254700000000?text=${encodeURIComponent(text)}`;
+  };
+
   return (
     <div className="bg-surface font-body-md text-on-surface min-h-screen">
       <header className="bg-surface shadow-sm flex justify-between items-center w-full px-margin-mobile py-2 z-50 fixed top-0 left-0">
@@ -49,164 +97,252 @@ export default function SendOffer() {
         </div>
       </header>
 
-      <main className="pt-24 pb-32 px-margin-mobile max-w-4xl mx-auto">
-        <div className="mb-6 flex items-center gap-4">
-          <button onClick={() => navigate('/browse')} className="p-2 border border-outline-variant rounded-full flex items-center justify-center hover:bg-surface-container-high transition">
-             <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <div>
-            <h1 className="font-headline-lg text-headline-lg text-primary mb-1">Sending Offer to Dentist #402</h1>
-            <p className="font-body-md text-on-surface-variant">Review clinic details and set transparent terms to attract high-quality candidates.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <form className="lg:col-span-8 space-y-4" onSubmit={(e) => { e.preventDefault(); alert("Offer Sent! Dentist notified on WhatsApp."); navigate('/browse'); }}>
-            <div className="bg-surface-container-lowest p-6 rounded-xl form-shadow border border-outline-variant">
-              <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary">assignment</span>
-                Job Fundamentals
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="font-label-md text-label-md text-on-surface-variant block mb-1">Position Type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="cursor-pointer" onClick={() => setPositionType('locum')}>
-                      <input className="hidden peer" name="position_type" type="radio" value="locum" checked={positionType === 'locum'} readOnly/>
-                      <div className="flex items-center justify-center p-4 border border-outline peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed-variant rounded-lg transition-all font-bold">
-                          Locum
-                      </div>
-                    </label>
-                    <label className="cursor-pointer" onClick={() => setPositionType('permanent')}>
-                      <input className="hidden peer" name="position_type" type="radio" value="permanent" checked={positionType === 'permanent'} readOnly/>
-                      <div className="flex items-center justify-center p-4 border border-outline peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed-variant rounded-lg transition-all font-bold">
-                          Permanent
-                      </div>
-                    </label>
-                  </div>
-                </div>
-                <div>
-                  <label className="font-label-md text-label-md text-on-surface-variant block mb-1">
-                    {positionType === 'permanent' ? 'Salary Offer (Fixed Monthly)' : 'Salary Offer (Per Day)'}
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">KES</span>
-                    <input 
-                      value={salary}
-                      onChange={(e) => setSalary(e.target.value)}
-                      className="w-full pl-14 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-bold text-headline-sm" 
-                      placeholder="0.00" 
-                      type="number"
-                    />
-                  </div>
-                  <p className="mt-1 text-[10px] text-on-surface-variant">Transparency increases application rates by 45% in the Nairobi metro area.</p>
-                </div>
-              </div>
+      <main className="pt-24 pb-32 px-margin-mobile max-w-5xl mx-auto">
+        {showSuccess ? (
+          <div className="bg-surface border border-outline-variant rounded-2xl p-8 max-w-md mx-auto text-center space-y-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-full bg-secondary-container text-secondary flex items-center justify-center mx-auto">
+              <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             </div>
-
-            <div className="bg-surface-container-lowest p-6 rounded-xl form-shadow border border-outline-variant">
-              <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary">calendar_month</span> Work Schedule
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {DAYS.map(day => (
-                  <button 
-                    key={day}
-                    onClick={() => handleDayToggle(day)}
-                    className={`px-4 py-2 rounded-full border transition-colors font-label-md text-label-md ${
-                      selectedDays.includes(day)
-                        ? 'border-primary bg-primary text-on-primary shadow-sm'
-                        : 'border-outline-variant hover:bg-surface-container-high text-on-surface'
-                    }`}
-                    type="button"
-                  >
-                    {day}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-2">
+              <h1 className="font-headline-md text-headline-md text-primary font-bold">Offer Sent Safely!</h1>
+              <p className="text-body-md text-on-surface-variant">
+                Your offer has been submitted to <span className="font-bold text-on-surface">{dentist.name}</span> in Mombasa/Nairobi and stored in your profile list.
+              </p>
             </div>
-
-            <div className="bg-surface-container-lowest p-6 rounded-xl form-shadow border border-outline-variant">
-              <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary">biotech</span> Available Equipment
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                {EQUIPMENT_LIST.map((item) => (
-                  <label key={item} className="flex items-center gap-4 p-3 bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant rounded-xl transition-colors cursor-pointer group">
-                    <div className="relative flex items-center">
-                      <input 
-                        className="w-5 h-5 rounded border-outline appearance-none checked:bg-secondary checked:border-secondary transition-colors" 
-                        type="checkbox"
-                        checked={equipment.includes(item)}
-                        onChange={() => handleEquipmentToggle(item)}
-                      />
-                      <span className="material-symbols-outlined absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-on-secondary text-[16px] pointer-events-none opacity-0 peer-checked:opacity-100" style={{ opacity: equipment.includes(item) ? 1 : 0 }}>check</span>
-                    </div>
-                    <span className="font-body-md font-medium text-on-surface group-hover:text-primary transition-colors">{item}</span>
-                  </label>
-                ))}
-              </div>
+            <div className="bg-surface-container-low p-4 rounded-xl text-left border border-outline-variant space-y-2">
+              <p className="text-body-sm text-on-surface flex justify-between">
+                <span>Position Type:</span> <strong className="uppercase">{positionType}</strong>
+              </p>
+              <p className="text-body-sm text-on-surface flex justify-between">
+                <span>Proposed Rate:</span> <strong>KES {Number(salary).toLocaleString()}</strong>
+              </p>
             </div>
-
-            <div className="bg-surface-container-lowest p-6 rounded-xl form-shadow border border-outline-variant">
-              <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary">location_on</span> Clinic Location
-              </h2>
-              <div className="space-y-4">
-                <div className="relative">
-                  <input className="w-full px-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-body-md" type="text" defaultValue="Valley Arcade Shopping Centre, Lavington, Nairobi"/>
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline">edit</span>
-                </div>
-                <div className="w-full h-48 bg-surface-container-high rounded-lg overflow-hidden relative">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-white p-2 rounded-full shadow-lg">
-                      <span className="material-symbols-outlined text-primary text-3xl">location_pin</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-6">
-              <button className="w-full bg-primary-container text-on-primary-container hover:bg-primary transition-all duration-200 py-6 rounded-xl font-headline-sm flex items-center justify-center gap-4 shadow-lg active:scale-[0.98]" type="submit">
-                Send Transparent Offer <span className="material-symbols-outlined">send</span>
+            <div className="flex flex-col gap-2 pt-2">
+              <a 
+                href={getWhatsAppLink()} 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-full py-3 bg-[#25D366] text-white font-bold rounded-lg flex items-center justify-center gap-2 hover:shadow-md transition active:scale-[0.98]"
+              >
+                <span className="material-symbols-outlined">chat</span> Notify on WhatsApp
+              </a>
+              <button 
+                onClick={() => navigate('/profile/clinic')}
+                className="w-full py-3 border border-outline-variant hover:bg-surface-container text-on-surface-variant font-bold rounded-lg transition"
+              >
+                Go to Clinic Dashboard
               </button>
-              <p className="text-center mt-4 text-label-md text-on-surface-variant">The candidate will be notified instantly via the DentMatch mobile app.</p>
             </div>
-          </form>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6 flex items-center gap-4">
+              <button onClick={() => navigate('/browse')} className="p-2 border border-outline-variant rounded-full flex items-center justify-center hover:bg-surface-container-high transition">
+                 <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+              <div>
+                <h1 className="font-headline-lg text-headline-lg text-primary mb-1">Sending Offer to {dentist.name}</h1>
+                <p className="font-body-md text-on-surface-variant">Setup precise, compliant daily or monthly packages for maximum responses.</p>
+              </div>
+            </div>
 
-          <aside className="lg:col-span-4 space-y-6">
-            <div className="bg-tertiary text-on-tertiary p-6 rounded-xl shadow-md">
-              <h3 className="font-headline-sm mb-2">Offer Integrity</h3>
-              <p className="text-body-md opacity-90 mb-4">DentMatch KE operates on a "True Value" model. Offers sent through this portal are considered final binding figures once accepted.</p>
-              <div className="flex items-center gap-2 bg-on-tertiary/10 p-2 rounded-lg">
-                <span className="material-symbols-outlined">verified_user</span>
-                <span className="font-label-md">Verified Payment Escrow Enabled</span>
-              </div>
-            </div>
-            
-            <div className="bg-surface-container p-6 rounded-xl border border-outline-variant">
-              <h3 className="font-headline-sm text-primary mb-4">Candidate Preview</h3>
-              <div className="flex items-center gap-4 mb-4">
-                <div>
-                  <p className="font-headline-sm">Dentist #402</p>
-                  <span className="bg-secondary-container text-on-secondary-container px-2 py-[2px] rounded text-[10px] font-bold uppercase tracking-wider">Specialist</span>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <form className="lg:col-span-8 space-y-6" onSubmit={handleSubmit}>
+                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
+                  <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2 font-bold text-primary">
+                    <span className="material-symbols-outlined text-secondary">assignment</span>
+                    Job Fundamentals
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="font-label-md text-label-md text-on-surface-variant block mb-2">Position Type</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setPositionType('locum');
+                            setSalary('15000');
+                          }}
+                          className={`flex items-center justify-center p-4 border rounded-xl transition-all font-bold ${
+                            positionType === 'locum' 
+                              ? 'border-primary bg-primary text-on-primary shadow-sm' 
+                              : 'border-outline hover:bg-surface-container-high'
+                          }`}
+                        >
+                          Locum Position
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            setPositionType('permanent');
+                            setSalary('200000');
+                          }}
+                          className={`flex items-center justify-center p-4 border rounded-xl transition-all font-bold ${
+                            positionType === 'permanent' 
+                              ? 'border-primary bg-primary text-on-primary shadow-sm' 
+                              : 'border-outline hover:bg-surface-container-high'
+                          }`}
+                        >
+                          Permanent Role
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="font-label-md text-label-md text-on-surface-variant block mb-1">
+                        {positionType === 'permanent' ? 'Salary Offer (Fixed Monthly)' : 'Salary Offer (Per Day)'}
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-on-surface-variant">KES</span>
+                        <input 
+                          value={salary}
+                          onChange={(e) => setSalary(e.target.value)}
+                          className="w-full pl-14 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-bold text-headline-sm" 
+                          placeholder="0.00" 
+                          type="number"
+                          required
+                          min="1"
+                        />
+                      </div>
+                      <p className="mt-1 text-[11px] text-on-surface-variant">Verified salaries improve dentist feedback intervals by 45%.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-body-md">
-                  <span className="material-symbols-outlined text-outline text-lg">school</span> BDS University of Nairobi
-                </li>
-                <li className="flex items-center gap-2 text-body-md">
-                  <span className="material-symbols-outlined text-outline text-lg">history</span> 6 Years Experience
-                </li>
-                <li className="flex items-center gap-2 text-body-md">
-                  <span className="material-symbols-outlined text-outline text-lg">star</span> 4.9/5 Average Rating
-                </li>
-              </ul>
+
+                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
+                  <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2 font-bold text-primary">
+                    <span className="material-symbols-outlined text-secondary">calendar_month</span> Work Schedule
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    {DAYS.map(day => (
+                      <button 
+                        key={day}
+                        onClick={() => handleDayToggle(day)}
+                        className={`px-4 py-2 rounded-full border transition-colors font-label-md text-label-md ${
+                          selectedDays.includes(day)
+                            ? 'border-primary bg-primary-container text-on-primary-container shadow-sm font-bold'
+                            : 'border-outline-variant hover:bg-surface-container-high text-on-surface'
+                        }`}
+                        type="button"
+                      >
+                        {day}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
+                  <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2 font-bold text-primary">
+                    <span className="material-symbols-outlined text-secondary">biotech</span> Available Equipment
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    {EQUIPMENT_LIST.map((item) => (
+                      <button 
+                        key={item}
+                        type="button"
+                        onClick={() => handleEquipmentToggle(item)}
+                        className={`flex items-center gap-3 p-3 border rounded-xl transition-all text-left ${
+                          equipment.includes(item)
+                            ? 'bg-secondary-container text-on-secondary-container border-secondary font-bold'
+                            : 'bg-surface-container-lowest hover:bg-surface-container-low border-outline-variant'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          {equipment.includes(item) ? 'check_box' : 'check_box_outline_blank'}
+                        </span>
+                        <span className="font-body-md">{item}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
+                  <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2 font-bold text-primary">
+                    <span className="material-symbols-outlined text-secondary">location_on</span> Clinic Location
+                  </h2>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <input 
+                        className="w-full px-4 py-4 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all font-body-md" 
+                        type="text" 
+                        value={clinicLocation}
+                        onChange={(e) => setClinicLocation(e.target.value)}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline">edit</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
+                  <h2 className="font-headline-sm text-headline-sm mb-4 flex items-center gap-2 font-bold text-primary">
+                    <span className="material-symbols-outlined text-secondary">chat</span> Additional Notes
+                  </h2>
+                  <textarea 
+                    value={additionalNotes}
+                    onChange={(e) => setAdditionalNotes(e.target.value)}
+                    rows={3}
+                    placeholder="We have a pediatric specialist booked on Saturday so pediatric surgery experience is a plus."
+                    className="w-full p-4 bg-surface-container-low border border-outline-variant rounded-xl outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-body-md"
+                  />
+                </div>
+
+                <div className="pt-4">
+                  <button 
+                    disabled={isSubmitting}
+                    className="w-full bg-primary text-on-primary hover:bg-primary-container hover:text-primary transition-all duration-200 py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] disabled:opacity-50" 
+                    type="submit"
+                  >
+                    {isSubmitting ? (
+                      <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                    ) : (
+                      <>
+                        Send Handshake Offer <span className="material-symbols-outlined">send</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-center mt-3 text-label-md text-on-surface-variant">The dentist can accept and automatically initialize a WhatsApp chat.</p>
+                </div>
+              </form>
+
+              <aside className="lg:col-span-4 space-y-6">
+                <div className="bg-tertiary-container text-on-tertiary-container p-6 rounded-xl border border-outline-variant">
+                  <h3 className="font-headline-sm font-bold flex items-center gap-2 mb-2 text-primary">
+                    <span className="material-symbols-outlined">shield</span> Integrity Model
+                  </h3>
+                  <p className="text-body-md opacity-90 mb-4">DentMatch KE operates with KMPDC verification compliance. Offers are pre-checked for fair clinical locum practices.</p>
+                  <div className="flex items-center gap-2 bg-on-secondary/15 p-2.5 rounded-lg text-body-sm">
+                    <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                    <span>Verified Payment Handshake</span>
+                  </div>
+                </div>
+                
+                <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant">
+                  <h3 className="font-headline-sm text-primary font-bold mb-4">Candidate Profile</h3>
+                  <div className="flex items-center gap-3 mb-4 p-4 rounded-xl bg-surface-container-high border border-outline-variant">
+                    <span className="material-symbols-outlined text-4xl text-secondary">account_circle</span>
+                    <div>
+                      <p className="font-bold text-on-surface">{dentist.name}</p>
+                      <p className="text-body-sm text-on-surface-variant">{dentist.specialty}</p>
+                    </div>
+                  </div>
+                  <ul className="space-y-3">
+                    <li className="flex items-center gap-2 text-body-md text-on-surface-variant">
+                      <span className="material-symbols-outlined text-primary text-[20px]">school</span> 
+                      <span>{dentist.education.degree}</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-body-md text-on-surface-variant">
+                      <span className="material-symbols-outlined text-primary text-[20px]">star</span> 
+                      <span>{dentist.rating} / 5 Rating</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-body-md text-on-surface-variant">
+                      <span className="material-symbols-outlined text-primary text-[20px]">badge</span> 
+                      <span>KMPDC Lic. {dentist.license}</span>
+                    </li>
+                  </ul>
+                </div>
+              </aside>
             </div>
-          </aside>
-        </div>
+          </>
+        )}
       </main>
 
       <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface shadow-sm md:hidden border-t border-outline-variant">
