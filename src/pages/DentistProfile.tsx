@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { DataStore, Dentist } from '../lib/dataStore';
 
 export default function DentistProfile() {
   const navigate = useNavigate();
 
+  const [dentist, setDentist] = useState<Dentist>(() => {
+    return DataStore.getDentist('dentist-842') || DataStore.getDentists()[0];
+  });
+
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: "Dr. Omondi",
-    specialty: "General Dentist",
-    yearsOfPractice: 5,
-    kmpdc: "A1234",
-    location: "Nairobi HQ"
+    name: dentist.name,
+    specialty: dentist.specialty,
+    yearsOfPractice: parseInt(dentist.experience) || 8,
+    kmpdc: dentist.license,
+    location: dentist.location
   });
 
   const [isEditingPreferences, setIsEditingPreferences] = useState(false);
@@ -20,10 +25,22 @@ export default function DentistProfile() {
   });
 
   const handleProfileSave = () => {
+    const updated = DataStore.updateDentist('dentist-842', {
+      name: profileData.name,
+      specialty: profileData.specialty,
+      experience: `${profileData.yearsOfPractice} Years`,
+      license: profileData.kmpdc,
+      location: profileData.location
+    });
+    const currentDentist = updated.find(d => d.id === 'dentist-842') || updated[0];
+    setDentist(currentDentist);
     setIsEditingProfile(false);
   };
 
   const handlePreferencesSave = () => {
+    DataStore.updateDentist('dentist-842', {
+      expectedSalary: `KSh ${(preferencesData.locumRate / 1000).toFixed(0)}k+`
+    });
     setIsEditingPreferences(false);
   };
 
@@ -61,14 +78,14 @@ export default function DentistProfile() {
                       {profileData.specialty} ({profileData.yearsOfPractice}+ Years)
                     </p>
                     <div className="pt-2 flex flex-wrap gap-2">
-                      <span className="bg-surface-container-high px-3 py-1 rounded-md text-label-md">KMPDC: {profileData.kmpdc}</span>
-                      <span className="bg-surface-container-high px-3 py-1 rounded-md text-label-md">{profileData.location}</span>
+                      <span className="bg-surface-container-high px-3 py-1 rounded-md text-label-md font-semibold">KMPDC: {profileData.kmpdc}</span>
+                      <span className="bg-surface-container-high px-3 py-1 rounded-md text-label-md font-semibold">{profileData.location}</span>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-3 w-full max-w-md">
                     <div>
-                      <label className="text-label-sm text-on-surface-variant">Name</label>
+                      <label className="text-label-sm text-on-surface-variant font-bold">Name</label>
                       <input 
                         className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none"
                         value={profileData.name}
@@ -76,20 +93,38 @@ export default function DentistProfile() {
                       />
                     </div>
                     <div>
-                      <label className="text-label-sm text-on-surface-variant">Specialty</label>
+                      <label className="text-label-sm text-on-surface-variant font-bold">Specialty</label>
                       <input 
                         className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none"
                         value={profileData.specialty}
                         onChange={(e) => setProfileData({...profileData, specialty: e.target.value})}
                       />
                     </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-label-sm text-on-surface-variant font-bold">Years of Practice</label>
+                        <input 
+                          type="number"
+                          className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                          value={profileData.yearsOfPractice}
+                          onChange={(e) => setProfileData({...profileData, yearsOfPractice: Number(e.target.value)})}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-label-sm text-on-surface-variant font-bold">KMPDC Number</label>
+                        <input 
+                          className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none"
+                          value={profileData.kmpdc}
+                          onChange={(e) => setProfileData({...profileData, kmpdc: e.target.value})}
+                        />
+                      </div>
+                    </div>
                     <div>
-                      <label className="text-label-sm text-on-surface-variant">Years of Practice</label>
+                      <label className="text-label-sm text-on-surface-variant font-bold">Location</label>
                       <input 
-                        type="number"
                         className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary outline-none"
-                        value={profileData.yearsOfPractice}
-                        onChange={(e) => setProfileData({...profileData, yearsOfPractice: Number(e.target.value)})}
+                        value={profileData.location}
+                        onChange={(e) => setProfileData({...profileData, location: e.target.value})}
                       />
                     </div>
                   </div>
@@ -109,10 +144,10 @@ export default function DentistProfile() {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 pt-5">
                     <button 
                       onClick={handleProfileSave}
-                      className="bg-primary text-white px-4 py-2 rounded-lg text-label-md font-bold"
+                      className="bg-primary text-white px-4 py-2 rounded-lg text-label-md font-bold active:scale-95 transition-transform"
                     >
                       Save
                     </button>

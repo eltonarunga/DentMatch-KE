@@ -6,19 +6,52 @@ export default function ClinicProfile() {
   const navigate = useNavigate();
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: "Smilecare Dental Clinic",
-    location: "Westlands, Nairobi",
-    phone: "+254 700 000 000",
-    email: "admin@smilecare.co.ke"
+  const [profileData, setProfileData] = useState(() => {
+    try {
+      const stored = localStorage.getItem('dm_clinic_profile');
+      return stored ? JSON.parse(stored) : {
+        name: "Smilecare Dental Clinic",
+        location: "Westlands, Nairobi",
+        phone: "+254 700 000 000",
+        email: "admin@smilecare.co.ke"
+      };
+    } catch {
+      return {
+        name: "Smilecare Dental Clinic",
+        location: "Westlands, Nairobi",
+        phone: "+254 700 000 000",
+        email: "admin@smilecare.co.ke"
+      };
+    }
   });
 
   const [isEditingDetails, setIsEditingDetails] = useState(false);
-  const [detailsData, setDetailsData] = useState({
-    kmpdc: "FAC-89302",
-    chairs: "4 fully equipped dental chairs",
-    equipment: "OPG, Intraoral Camera, Rotary Endo"
+  const [detailsData, setDetailsData] = useState(() => {
+    try {
+      const stored = localStorage.getItem('dm_clinic_details');
+      return stored ? JSON.parse(stored) : {
+        kmpdc: "FAC-89302",
+        chairs: "4 fully equipped dental chairs",
+        equipment: "OPG, Intraoral Camera, Rotary Endo"
+      };
+    } catch {
+      return {
+        kmpdc: "FAC-89302",
+        chairs: "4 fully equipped dental chairs",
+        equipment: "OPG, Intraoral Camera, Rotary Endo"
+      };
+    }
   });
+
+  const handleProfileSave = () => {
+    localStorage.setItem('dm_clinic_profile', JSON.stringify(profileData));
+    setIsEditingProfile(false);
+  };
+
+  const handleDetailsSave = () => {
+    localStorage.setItem('dm_clinic_details', JSON.stringify(detailsData));
+    setIsEditingDetails(false);
+  };
 
   // State managed dynamically in LocalStorage
   const [offers, setOffers] = useState<Offer[]>(() => DataStore.getOffers());
@@ -156,8 +189,8 @@ export default function ClinicProfile() {
                 ) : (
                   <div className="flex flex-col gap-2">
                     <button 
-                      onClick={() => setIsEditingProfile(false)}
-                      className="bg-primary text-white px-4 py-2 rounded-lg text-label-md font-bold"
+                      onClick={handleProfileSave}
+                      className="bg-primary text-white px-4 py-2 rounded-lg text-label-md font-bold animate-in fade-in"
                     >
                       Save
                     </button>
@@ -190,7 +223,7 @@ export default function ClinicProfile() {
               ) : (
                 <div className="flex gap-2">
                   <button onClick={() => setIsEditingDetails(false)} className="text-on-surface-variant text-label-md font-bold hover:bg-surface-container-high px-3 py-1.5 rounded-lg">Cancel</button>
-                  <button onClick={() => setIsEditingDetails(false)} className="bg-primary text-white text-label-md font-bold px-3 py-1.5 rounded-lg">Save</button>
+                  <button onClick={handleDetailsSave} className="bg-primary text-white text-label-md font-bold px-3 py-1.5 rounded-lg">Save</button>
                 </div>
               )}
             </div>

@@ -5,6 +5,7 @@ import { DataStore, Offer } from '../lib/dataStore';
 export default function DentistDashboard() {
   const navigate = useNavigate();
   const [offers, setOffers] = useState<Offer[]>(() => DataStore.getOffers());
+  const dentist = DataStore.getDentist('dentist-842') || DataStore.getDentists()[0];
 
   const activeCount = offers.filter(o => o.status === 'Pending').length;
 
@@ -27,11 +28,11 @@ export default function DentistDashboard() {
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-[0px_2px_8px_rgba(13,71,161,0.05)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="font-headline-lg text-headline-lg text-on-surface mb-1 font-bold">Welcome back, Dr. Omondi</h1>
+              <h1 className="font-headline-lg text-headline-lg text-on-surface mb-1 font-bold">Welcome back, {dentist.name}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <span className="inline-flex items-center px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-md font-label-md font-bold">
                   <span className="material-symbols-outlined text-[14px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                  Status: KMPDC Verified (A4930)
+                  Status: KMPDC Verified ({dentist.license})
                 </span>
               </div>
             </div>

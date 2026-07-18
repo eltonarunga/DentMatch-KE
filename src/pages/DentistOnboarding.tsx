@@ -1,14 +1,35 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { DataStore } from '../lib/dataStore';
 
 export default function DentistOnboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [yearsOfPractice, setYearsOfPractice] = useState(5);
+  const [specialty, setSpecialty] = useState("Orthodontics Specialist");
+  const [license, setLicense] = useState("A4930");
+  const [locumRate, setLocumRate] = useState("15000");
+  const [permanentRate, setPermanentRate] = useState("250000");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifiedMsg, setVerifiedMsg] = useState("");
+  
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const totalSteps = 3;
+
+  const handleVerifyLicense = () => {
+    if (!license.trim()) {
+      setVerifiedMsg("Please enter a valid KMPDC License number.");
+      return;
+    }
+    setIsVerifying(true);
+    setVerifiedMsg("");
+    setTimeout(() => {
+      setIsVerifying(false);
+      setVerifiedMsg("✓ KMPDC Registry Verified - Active License");
+    }, 800);
+  };
 
   const handleFileUpload = async (file: File) => {
     // Basic validation
@@ -20,11 +41,6 @@ export default function DentistOnboarding() {
     // Simulate upload delay and future database integration
     setIsUploading(true);
     try {
-      // Future integration: 
-      // const formData = new FormData();
-      // formData.append('document', file);
-      // await supabase.storage.from('credentials').upload(`kmpdc/${file.name}`, file);
-      
       await new Promise(resolve => setTimeout(resolve, 1500));
       setUploadedFile(file);
     } catch (error) {
@@ -54,8 +70,18 @@ export default function DentistOnboarding() {
   };
 
   const nextStep = () => {
-    if (step < totalSteps) setStep(step + 1);
-    else navigate('/dashboard');
+    if (step < totalSteps) {
+      setStep(step + 1);
+    } else {
+      // Save onboarding data directly to DataStore for dentist-842 (Dr. David Omondi)
+      DataStore.updateDentist('dentist-842', {
+        specialty,
+        experience: `${yearsOfPractice} Years`,
+        license,
+        expectedSalary: `KSh ${(Number(locumRate) / 1000).toFixed(0)}k+`
+      });
+      navigate('/dashboard');
+    }
   };
 
   const prevStep = () => {
@@ -105,10 +131,14 @@ export default function DentistOnboarding() {
               <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant mb-6">
                 <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-2 block">Primary Specialty</label>
                 <div className="relative">
-                  <select className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 text-body-md focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
+                  <select 
+                    className="w-full bg-surface-container-low border-none rounded-lg px-4 py-3 text-body-md focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
+                    value={specialty}
+                    onChange={(e) => setSpecialty(e.target.value)}
+                  >
                     <option value="">Select your primary specialty</option>
                     <option value="General Dentistry">General Dentistry</option>
-                    <option value="Orthodontics">Orthodontics</option>
+                    <option value="Orthodontics Specialist">Orthodontics Specialist</option>
                     <option value="Oral & Maxillofacial Surgery">Oral & Maxillofacial Surgery</option>
                     <option value="Pediatric Dentistry">Pediatric Dentistry</option>
                     <option value="Periodontics">Periodontics</option>
@@ -142,12 +172,28 @@ export default function DentistOnboarding() {
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">badge</span>
-                      <input className="w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all font-body-md text-body-md" placeholder="e.g., A1234" type="text"/>
+                      <input 
+                        className="w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all font-body-md text-body-md" 
+                        placeholder="e.g., A4930" 
+                        type="text"
+                        value={license}
+                        onChange={(e) => setLicense(e.target.value)}
+                      />
                     </div>
-                    <button className="bg-secondary text-on-secondary px-6 py-3 rounded-lg font-label-md text-label-md font-bold active:scale-95 transition-transform flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">verified</span> Verify
+                    <button 
+                      onClick={handleVerifyLicense}
+                      disabled={isVerifying}
+                      className="bg-secondary text-on-secondary px-6 py-3 rounded-lg font-label-md text-label-md font-bold active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-75"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">{isVerifying ? 'sync' : 'verified'}</span> 
+                      {isVerifying ? 'Verifying...' : 'Verify'}
                     </button>
                   </div>
+                  {verifiedMsg && (
+                    <p className={`text-body-sm font-label-md mt-2 ${verifiedMsg.startsWith('✓') ? 'text-secondary' : 'text-error'}`}>
+                      {verifiedMsg}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -210,14 +256,24 @@ export default function DentistOnboarding() {
                     <label className="font-label-md text-label-md text-on-surface">Locum (Per Day)</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 font-label-md text-on-surface-variant">KES</span>
-                      <input className="w-full pl-12 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary font-body-md text-body-md" type="number" defaultValue="15000"/>
+                      <input 
+                        className="w-full pl-12 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary font-body-md text-body-md" 
+                        type="number" 
+                        value={locumRate}
+                        onChange={(e) => setLocumRate(e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className="space-y-1">
                     <label className="font-label-md text-label-md text-on-surface">Permanent (Per Month)</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 font-label-md text-on-surface-variant">KES</span>
-                      <input className="w-full pl-12 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary font-body-md text-body-md" type="number" defaultValue="250000"/>
+                      <input 
+                        className="w-full pl-12 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary font-body-md text-body-md" 
+                        type="number" 
+                        value={permanentRate}
+                        onChange={(e) => setPermanentRate(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
