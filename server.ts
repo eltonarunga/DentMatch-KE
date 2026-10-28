@@ -1,5 +1,6 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 
@@ -7,9 +8,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
-app.use(express.json());
+// Basic Security & Caching Headers
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
+
+// JSON Body Parser with limit
+app.use(express.json({ limit: "2mb" }));
 
 // In-Memory Database for DentMatch KE
 export interface DentistRecord {
@@ -315,14 +325,47 @@ function normalizeKenyanPhone(phone: string): string {
 // API ROUTES
 // ----------------------------------------------------
 
-// 1. Health check
+// 1. Health check & Diagnostics (Production Container Ready)
 app.get("/api/health", (_req: Request, res: Response) => {
+  const memory = process.memoryUsage();
   res.json({
     status: "ok",
     service: "DentMatch KE API",
     version: "2.0.0",
+    environment: process.env.NODE_ENV || "development",
     uptimeSeconds: Math.floor(process.uptime()),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    system: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      memoryRssMb: Math.round(memory.rss / (1024 * 1024)),
+      memoryHeapUsedMb: Math.round(memory.heapUsed / (1024 * 1024))
+    },
+    database: {
+      status: "connected",
+      dentistsCount: dentistsDb.length,
+      offersCount: offersDb.length,
+      kmpdcRegistryCount: Object.keys(KMPDC_REGISTRY).length
+    }
+  });
+});
+
+// Platform Metadata & Capabilities API
+app.get("/api/info", (_req: Request, res: Response) => {
+  res.json({
+    platform: "DentMatch KE",
+    description: "Kenya's Reverse-Recruitment Dental Marketplace",
+    version: "2.0.0",
+    features: [
+      "KMPDC Automated License Verification",
+      "Safaricom Lipa Na M-Pesa Online STK Push Escrow",
+      "Africa's Talking SMS & WhatsApp Notification Triggers",
+      "Reverse-Recruitment Contracting Flow",
+      "Market Compensation Benchmarks (KES)"
+    ],
+    supportedCounties: ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Kiambu"],
+    currency: "KES",
+    dialCode: "+254"
   });
 });
 
@@ -702,6 +745,28 @@ app.get("/api/analytics/rates", (_req: Request, res: Response) => {
 });
 
 // ----------------------------------------------------
+// API 404 & ERROR HANDLING
+// ----------------------------------------------------
+
+// Explicit 404 handler for unknown /api routes (prevents leaking SPA index.html to API clients)
+app.all("/api/*", (req: Request, res: Response) => {
+  res.status(404).json({
+    error: "API endpoint not found",
+    method: req.method,
+    path: req.path
+  });
+});
+
+// Global production error handling middleware
+app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("[DentMatch Server Error]:", err);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal Server Error",
+    status: err.status || 500
+  });
+});
+
+// ----------------------------------------------------
 // VITE & STATIC SERVING INTEGRATION
 // ----------------------------------------------------
 async function startServer() {
@@ -712,16 +777,42 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    const possiblePaths = [
+      path.join(process.cwd(), "dist"),
+      path.join(__dirname, "dist"),
+      path.join(__dirname, "..", "dist")
+    ];
+    const distPath = possiblePaths.find(p => fs.existsSync(p)) || path.join(process.cwd(), "dist");
+
+    app.use(express.static(distPath, {
+      maxAge: "1d",
+      index: false
+    }));
+
     app.get("*", (_req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send("DentMatch KE bundle not built. Please run 'npm run build' first.");
+      }
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`DentMatch KE Server running on http://0.0.0.0:${PORT}`);
+  const server = app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[DentMatch KE] Server listening on http://0.0.0.0:${PORT} in ${process.env.NODE_ENV || "development"} mode`);
   });
+
+  const handleShutdown = (signal: string) => {
+    console.log(`[DentMatch KE] Received ${signal}. Closing HTTP connections gracefully...`);
+    server.close(() => {
+      console.log("[DentMatch KE] Server shutdown complete.");
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", () => handleShutdown("SIGTERM"));
+  process.on("SIGINT", () => handleShutdown("SIGINT"));
 }
 
 startServer();

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background with subtle corner radius -->
+  <rect width="64" height="64" rx="14" fill="#003178"/>
+  
+  <!-- Subtle inner gradient glow -->
+  <defs>
+    <linearGradient id="toothGrad" x1="16" y1="12" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#D9E2FF" />
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="38" y1="36" x2="56" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#006A60" />
+      <stop offset="100%" stop-color="#004D40" />
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="64" height="64" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Stylized Tooth Shape -->
+  <path d="M32 12C23.5 12 18 16.5 18 24C18 29.5 20.5 35 22.5 41C24.2 46.2 26.5 52 28.5 52C30 52 30.8 48 32 44C33.2 48 34 52 35.5 52C37.5 52 39.8 46.2 41.5 41C43.5 35 46 29.5 46 24C46 16.5 40.5 12 32 12Z" fill="url(#toothGrad)" filter="url(#shadow)"/>
+
+  <!-- Dental Enamel Highlight Contour -->
+  <path d="M26 18C28 16.5 30 16 32 16C34 16 36 16.5 38 18C36 17 34 16.5 32 16.5C30 16.5 28 17 26 18Z" fill="#003178" opacity="0.3"/>
+
+  <!-- KMPDC Verification Shield Badge in Bottom Right -->
+  <circle cx="45" cy="45" r="11" fill="url(#badgeGrad)" stroke="#85F6E5" stroke-width="2"/>
+  
+  <!-- Medical Checkmark/Cross in Badge -->
+  <path d="M41 45.2L43.8 48L49.5 42" stroke="#85F6E5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
